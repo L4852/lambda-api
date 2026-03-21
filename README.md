@@ -3,7 +3,8 @@
 Python API which provides a framework allowing control sequences and commands to be written in Python and sent over serial as GRBL G-Code.  
   
 Designed for **Lambda**, a robot arm built on *Arctos v2.9.7 (Open Loop)* by **Arctos Robotics**.  
-  
+    
+`Arctos GRBL firmware (v0.1)` [here](https://github.com/Arctos-Robotics/Arctos-grbl-v0.1)
   
 # Core Features  
   
@@ -31,53 +32,57 @@ Class methods (blank) and variables. See source code for full implementation.
 ### GRBLTranslation  
 ```python  
 class GRBLTranslation:  
- @staticmethod def parse_status(status_message: str) -> str: pass  
+ @staticmethod
+ def parse_status(status_message: str) -> str:
+     pass  
 ```  
 ### RobotControl  
 ```python  
 class RobotControl:
-	def __init__(self):
+    def __init__(self):
         self.x = 0
-		self.y = 0
-		self.z = 0    
-		self.a = 0    
-		self.b = 0  
-		self.c = 0    
-        
-        self.unlocked = False    
-        
-        self.command_queue = []  
-  
- def unlock(self):
-	 pass
-	 
- def calibrate(self):
-	 pass
-	 
- def rotate(self):
-	 pass  
+        self.y = 0
+        self.z = 0
+        self.a = 0
+        self.b = 0
+        self.c = 0
+
+        self.unlocked = False
+        self.command_queue = []
+    
+    
+    def unlock(self):
+        pass
+    
+    
+    def calibrate(self):
+        pass
+    
+    
+    def rotate(self):
+        pass  
 ```  
 ### KeyboardInput  
 ```python  
 class KeyboardInput:
-	def __init__(self):  
+    def __init__(self):
         pass
-  
-	def on_press(self, key) -> None:
-		pass
-    
-    def on_release(self, key: Key)
-	  
-	def run(self) -> bool | None:
-		pass
+
+    def on_press(self, key):
+        pass
+
+    def run(self):
+        pass
 ```  
 ### SerialCommunication  
 ```python  
-def __init__(self, port):    
-    self.port = port    
-    self.connection_established = False  
+def __init__(self, port):
+    self.port = port
+    self.connection_established = False
+
+
 def send_packet(queue: List):
-	pass  
+    pass  
 ```  
   
 Last updated: L4852 (026.0320)
