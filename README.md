@@ -1,6 +1,6 @@
 # LambdaAPI  
-  
-Python API which provides a framework allowing control sequences and commands to be written in Python and sent over serial as GRBL G-Code.  
+
+CNC controller and API written in Python, outputs GRBL G-Code.  
   
 Designed for **Lambda**, a robot arm built on *Arctos v2.9.7 (Open Loop)* by **Arctos Robotics**.  
     
@@ -84,5 +84,8 @@ def __init__(self, port):
 def send_packet(queue: List):
     pass  
 ```  
-  
-Last updated: L4852 (026.0320)
+
+![layout.jpeg](layout.jpeg)
+`Flowchart diagram of software/hardware layout.`
+
+`Last updated: L4852 (026.0320)`
