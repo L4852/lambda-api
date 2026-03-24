@@ -1,6 +1,6 @@
 # LambdaAPI  
 
-CNC controller and API written in Python, outputs GRBL G-Code.  
+Supervising controller and API for real-time / high-level control and fault detection layer. Allows control sequences and commands to be written in Python and sent over serial as GRBL G-Code.  
   
 Designed for **Lambda**, a robot arm built on *Arctos v2.9.7 (Open Loop)* by **Arctos Robotics**.  
     
