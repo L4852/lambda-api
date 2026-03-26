@@ -1,6 +1,7 @@
 from pynput import keyboard
 from pynput.keyboard import Key, KeyCode
 
+from constants import Constants
 from input_commands import InputCommands
 from robot_control import RobotControl
 
@@ -18,8 +19,10 @@ class KeyboardInput:
             Key.right.name: InputCommands.X_CW,
             Key.up.name: InputCommands.Y_UP,
             Key.down.name: InputCommands.Y_DOWN,
-            'c': InputCommands.END_EFF_CLOSE,
-            'v': InputCommands.END_EFF_OPEN,
+            'f': InputCommands.B_UP,
+            'v': InputCommands.B_DOWN,
+            'x': InputCommands.END_EFF_CLOSE,
+            'c': InputCommands.END_EFF_OPEN,
             '1': InputCommands.SPEED_SLOW,
             '2': InputCommands.SPEED_MEDIUM,
             '3': InputCommands.SPEED_HIGH,
@@ -34,11 +37,19 @@ class KeyboardInput:
             Key.f7.name: InputCommands.MACRO_7,
             Key.f8.name: InputCommands.MACRO_8,
             Key.f9.name: InputCommands.MACRO_9,
+            'l': InputCommands.REQUEST_ROBOT_STATUS,
+            '`': InputCommands.SOFT_RESET,
+            '.': InputCommands.SEND_JOG_STOP
         }
 
         self.robotInstance = RobotControl()
 
     def on_press(self, key: Key | KeyCode) -> None:
+        if key == Key.esc:
+            raise Exception("Program exit command received.")
+        if Constants.KEY_LOG:
+            print("KEY |", key)
+
         key_value = key.char if isinstance(key, KeyCode) else key.name
 
         command: InputCommands | None = None
@@ -64,7 +75,7 @@ class KeyboardInput:
         if key == keyboard.Key.esc:
             return False
 
-        if key_value in ['up', 'down', 'left', 'right', 'q', 'w', 'e', 'a', 's', 'd', 'c', 'v']:
+        if key_value in ['up', 'down', 'left', 'right', 'q', 'w', 'e', 'a', 's', 'd', 'x', 'c', 'v', 'f']:
             self.robotInstance.execute(InputCommands.AXIS_RELEASE)
 
     def run(self):
@@ -72,3 +83,4 @@ class KeyboardInput:
                 on_press=self.on_press,
                 on_release=self.on_release) as listener:
             listener.join()
+        self.robotInstance.serial_connection.connection.close()
