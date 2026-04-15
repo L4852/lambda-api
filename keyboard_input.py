@@ -39,7 +39,8 @@ class KeyboardInput:
             Key.f9.name: InputCommands.MACRO_9,
             'l': InputCommands.REQUEST_ROBOT_STATUS,
             '`': InputCommands.SOFT_RESET,
-            '.': InputCommands.SEND_JOG_STOP
+            '.': InputCommands.SEND_JOG_STOP,
+            '0': InputCommands.RETURN_TO_ORIGIN
         }
 
         self.robotInstance = RobotControl()

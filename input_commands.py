@@ -32,6 +32,7 @@ class InputCommands(IntEnum):
     MACRO_7 = auto(),
     MACRO_8 = auto(),
     MACRO_9 = auto(),
-    REQUEST_ROBOT_STATUS = auto()
-    SOFT_RESET = auto()
-    SEND_JOG_STOP = auto()
+    REQUEST_ROBOT_STATUS = auto(),
+    SOFT_RESET = auto(),
+    SEND_JOG_STOP = auto(),
+    RETURN_TO_ORIGIN = auto()

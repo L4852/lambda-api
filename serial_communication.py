@@ -1,3 +1,5 @@
+import signal
+import sys
 import time
 
 import serial
@@ -22,34 +24,64 @@ class SerialCommunication:
             print("Debug mode (no serial connection) is active.")
             return
 
+        signal.signal(signal.SIGTERM, self.close_connection)
+        signal.signal(signal.SIGINT, self.close_connection)
+
         print(f"Attempting serial connection to '{port}'.")
 
         try:
             print("Connecting...")
-            self.connection = serial.Serial(port, baudrate=115200, timeout=Constants.READ_TIMEOUT)
+
+            self.connection = serial.Serial(
+                port, baudrate=115200,
+                timeout=Constants.READ_TIMEOUT,
+            )
+
+            time.sleep(3)
+
+            print("Clearing input and output buffers...")
+            self.connection.reset_input_buffer()
+            self.connection.reset_output_buffer()
 
             time.sleep(1)
 
             # PING
             print("Waiting for acknowledgement...")
-            self.connection.write(b'$')
-            self.connection.readline()
+            self.connection.write(b'\r\n')
+            a = self.connection.readline()
             ping_response = self.connection.readline()
 
             if len(ping_response) > 0:
                 self.connected = True
                 print("Connected successfully.")
             else:
-                print(f"Connection to serial port '{port}' unsuccessful.")
+                print(f"Connection to serial port '{port}' unsuccessful. Exiting program...")
                 time.sleep(3)
-                raise Exception("Connection to serial port failed. Exiting program.")
+                raise Exception("Connection to serial port failed.")
 
         except serial.SerialException:
-            print(f"Could not connect to serial port '{port}',")
+            time.sleep(1)
+            print(f"Port '{port}' could not be found. Exiting program...")
             time.sleep(2)
             raise Exception(f"Could not connect to serial port '{port}'.")
 
         time.sleep(1)
+
+    def close_connection(self, signal_number, frame):
+        print(f"SIGNAL '{signal.Signals(signal_number).name}' received.")
+        if self.connection is not None and self.connection.is_open:
+            print(f"Active serial connection found, closing...")
+
+            time.sleep(1)
+
+            self.connection.flush()
+
+            time.sleep(2)
+
+            self.connection.close()
+            print(f"Connection closed successfully, exiting program...")
+            time.sleep(2)
+            sys.exit(0)
 
     def bytes_as_hex(self, byte_data: bytes) -> str:
         return byte_data.hex(sep=" ").upper()
@@ -78,11 +110,13 @@ class SerialCommunication:
 
             lines_read = 0
 
-            while not ((seen_terminator and self.connection.in_waiting == 0) or extracted_line == b'') and lines_read < Constants.MAX_LINES_READ:
+            while not (
+                    (
+                            seen_terminator and self.connection.in_waiting == 0) or extracted_line == b'') and lines_read < Constants.MAX_LINES_READ:
                 extracted_line = self.connection.readline()
                 buffer.extend(extracted_line)
 
-                if extracted_line.decode().startswith(('ok', 'error', 'ALARM', 'MSG')):
+                if extracted_line.decode().startswith(('ok', 'error', 'ALARM', 'MSG', '<')):
                     seen_terminator = True
 
                 lines_read += 1
