@@ -15,6 +15,7 @@ class KeyboardInput:
             's': InputCommands.Z_DOWN,
             'q': InputCommands.C_CCW,
             'e': InputCommands.C_CW,
+            Key.alt_r.name: InputCommands.TOGGLE_KEY_LOCK,
             Key.left.name: InputCommands.X_CCW,
             Key.right.name: InputCommands.X_CW,
             Key.up.name: InputCommands.Y_UP,
@@ -28,6 +29,7 @@ class KeyboardInput:
             '3': InputCommands.SPEED_HIGH,
             'r': InputCommands.REC_TOGGLE,
             'h': InputCommands.RUN_CALIBRATION,
+            'z': InputCommands.ZERO_AXES,
             Key.f1.name: InputCommands.MACRO_1,
             Key.f2.name: InputCommands.MACRO_2,
             Key.f3.name: InputCommands.MACRO_3,
@@ -40,7 +42,8 @@ class KeyboardInput:
             'l': InputCommands.REQUEST_ROBOT_STATUS,
             '`': InputCommands.SOFT_RESET,
             '.': InputCommands.SEND_JOG_STOP,
-            '0': InputCommands.RETURN_TO_ORIGIN
+            '0': InputCommands.RETURN_TO_ORIGIN,
+            '9': InputCommands.RETURN_TO_NEUTRAL
         }
 
         self.robotInstance = RobotControl()

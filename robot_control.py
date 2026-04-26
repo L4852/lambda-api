@@ -63,6 +63,8 @@ class RobotControl:
 
         self.recording = False
 
+        self.key_locked = False
+
         self.selected_macro: Macro | None = None
 
         self.macro_recording_buffer: list = []
@@ -78,7 +80,8 @@ class RobotControl:
 
         # sudo pkill bluetoothd
 
-        self.serial_connection = SerialCommunication(Constants.ROBOT_PORT_BT if Constants.USE_BLUETOOTH else Constants.ROBOT_PORT_USB)
+        self.serial_connection = SerialCommunication(
+            Constants.ROBOT_PORT_BT if Constants.USE_BLUETOOTH else Constants.ROBOT_PORT_USB)
 
         self.current_axis: Axis | None = None
 
@@ -91,6 +94,10 @@ class RobotControl:
         self.enable_wpos()
 
         self.disable_soft_limits()
+
+        self.set_units_metric()
+
+        self.set_absolute_position_mode()
 
         self.initialize_steps_per_unit()
 
@@ -250,7 +257,19 @@ class RobotControl:
 
     def go_to_origin(self):
         print("Returning to origin...")
-        self.serial_connection.send_message("$J=G90X0Y0Z0A0", expect_no_response=True)
+        self.serial_connection.send_message("G0 G90 X0 Y0 Z0 A0")
+        self.serial_connection.send_message("G0 G54 B0")
+        time.sleep(2)
+        self.serial_connection.send_message("G0 G54 C0")
+        print("Returned to origin.")
+
+    def go_to_neutral(self):
+        print("Returning to neutral...")
+        self.serial_connection.send_message(f"G0 G90 X0 Y{Constants.NEUTRAL_COORDINATE[1]} Z{Constants.NEUTRAL_COORDINATE[2]} A0")
+        self.serial_connection.send_message("G0 G54 B0")
+        time.sleep(2)
+        self.serial_connection.send_message("G0 G54 C0")
+        print("Returned to neutral.")
 
     def set_acceleration(self):
         print("Setting acceleration...")
@@ -275,21 +294,46 @@ class RobotControl:
 
         print("Steps per unit initialized.")
 
+    def set_units_metric(self):
+        print("Setting robot units... -> [Metric (mm)]")
+
+        self.serial_connection.send_message("G21")
+
+    def set_absolute_position_mode(self):
+        print("Defaulting to absolute positioning mode...")
+
+        self.serial_connection.send_message("G90")
+
     # =========================
     # G-code send / execution
     # =========================
     def execute(self, command: InputCommands):
         # SERVO M97 B180 T0.2
         # Common shared commands between both calibration and normal control mode
+
+        if command == InputCommands.TOGGLE_KEY_LOCK:
+            if not self.key_locked:
+                self.key_locked = True
+                print("Key input locked.")
+            else:
+                self.key_locked = False
+                print("Key input unlocked.")
+
+        if self.key_locked:
+            return
+
         if command == InputCommands.SPEED_SLOW:
             self.current_speed = 100
+            print(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_MEDIUM:
             self.current_speed = 500
+            print(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_HIGH:
             self.current_speed = 750
+            print(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.REQUEST_ROBOT_STATUS:
             status_dict = self.get_status()
-            print(status_dict)
+            print("STATUS:", status_dict)
         elif command == InputCommands.SOFT_RESET:
             print("Sending soft reset command...")
             response = self.send(b'\x18', True)
@@ -298,6 +342,12 @@ class RobotControl:
 
             if response:
                 print(response)
+        elif command == InputCommands.RETURN_TO_ORIGIN:
+            self.go_to_origin()
+        elif command == InputCommands.RETURN_TO_NEUTRAL:
+            self.go_to_neutral()
+
+
         elif command == InputCommands.SEND_JOG_STOP:
             print("Sending jog stop command...")
             response = self.send(b'\x85', True)
@@ -324,6 +374,7 @@ class RobotControl:
                 print("REC | Recording started.")
             elif self.saved_macros[Macro.MACRO_1]:
                 # Play Macro 1
+                print(f"Playing P{Macro.MACRO_1.name}...\n{self.saved_macros[Macro.MACRO_1]}")
                 self.play_macro(Macro.MACRO_1)
         elif command == InputCommands.MACRO_2:
             if self.recording:
@@ -409,7 +460,7 @@ class RobotControl:
                 if command == InputCommands.X_CW:
                     axis = 'X'
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}{Constants.X_POS_MAX}F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.X_POS_LIMIT[1]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -419,7 +470,7 @@ class RobotControl:
                 elif command == InputCommands.X_CCW:
                     axis = Axis.AXIS_X
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}0F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.X_POS_LIMIT[0]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -429,7 +480,7 @@ class RobotControl:
                 elif command == InputCommands.Y_UP:
                     axis = Axis.AXIS_Y
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}{Constants.Y_POS_MAX}F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.Y_POS_LIMIT[1]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -439,7 +490,7 @@ class RobotControl:
                 elif command == InputCommands.Y_DOWN:
                     axis = Axis.AXIS_Y
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}0F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.Y_POS_LIMIT[0]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -449,7 +500,7 @@ class RobotControl:
                 elif command == InputCommands.Z_UP:
                     axis = Axis.AXIS_Z
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}0F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.Z_POS_LIMIT[0]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -459,7 +510,7 @@ class RobotControl:
                 elif command == InputCommands.Z_DOWN:
                     axis = Axis.AXIS_Z
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}{Constants.Z_POS_MAX}F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.Z_POS_LIMIT[1]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -469,7 +520,7 @@ class RobotControl:
                 if command == InputCommands.A_CCW:
                     axis = Axis.AXIS_A
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}{Constants.A_POS_MAX}F{feed_rate}"
+                    gcode_string = f"$J=G90{axis}{Constants.A_POS_LIMIT[1]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -489,7 +540,7 @@ class RobotControl:
                 if command == InputCommands.B_UP:
                     axis = Axis.AXIS_B
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90C{Constants.B_POS_MAX}F{feed_rate}"
+                    gcode_string = f"$J=G90C{Constants.B_POS_LIMIT[1]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -499,7 +550,7 @@ class RobotControl:
                 elif command == InputCommands.B_DOWN:
                     axis = Axis.AXIS_B
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90C0F{feed_rate}"
+                    gcode_string = f"$J=G90C{Constants.B_POS_LIMIT[0]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -509,7 +560,7 @@ class RobotControl:
                 if command == InputCommands.C_CCW:
                     axis = Axis.AXIS_C
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90B0F{feed_rate}"
+                    gcode_string = f"$J=G90B{Constants.C_POS_LIMIT[0]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -519,7 +570,7 @@ class RobotControl:
                 elif command == InputCommands.C_CW:
                     axis = Axis.AXIS_C
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90B{Constants.C_POS_MAX}F{feed_rate}"
+                    gcode_string = f"$J=G90B{Constants.C_POS_LIMIT[1]}F{feed_rate}"
 
                     self.send(gcode_string)
 
@@ -533,6 +584,14 @@ class RobotControl:
             else:
                 pass
         else:
+            if command == InputCommands.ZERO_AXES:
+                print("Zeroing axes...")
+                # gcode_string = "$RST=#"
+                # self.send(gcode_string)
+                # time.sleep(2)
+                gcode_string_2 = "G10 L20 P1 X0 Y0 Z0 A0 B0 C0"
+                self.send(gcode_string_2)
+                print("Axes zeroed.")
             if command == InputCommands.X_CW:
                 axis = Axis.AXIS_X
                 feed_rate = self.current_speed

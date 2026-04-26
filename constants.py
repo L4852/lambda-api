@@ -2,14 +2,18 @@ class Constants:
     # Constants
 
     # Integers / Float
+    CONNECTION_RETRY_MAX = 5
+    CONNECTION_RETRY_DELAY = 5
     SERVO_TRAVEL_TIME = 0.5
 
-    X_POS_MAX: int = 54
-    Y_POS_MAX: int = 180
-    Z_POS_MAX: int = 180
-    A_POS_MAX: int = 360
-    B_POS_MAX: int = 180
-    C_POS_MAX: int = 360
+    X_POS_LIMIT: (int, int) = (-27, 27)
+    Y_POS_LIMIT: (int, int) = (-125,95)
+    Z_POS_LIMIT: (int, int) = (-200, 25)
+    A_POS_LIMIT: (int, int) = (-20, 20)
+    B_POS_LIMIT: (int, int) = (0, 180)
+    C_POS_LIMIT: (int, int) = (-60, 60)
+
+    NEUTRAL_COORDINATE: (int, int, int, int, int, int) = (0, -35, -165, 0, 0, 0)
 
     X_ACCEL: float = 10.0
     Y_ACCEL: float = 10.0

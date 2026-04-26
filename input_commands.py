@@ -35,4 +35,7 @@ class InputCommands(IntEnum):
     REQUEST_ROBOT_STATUS = auto(),
     SOFT_RESET = auto(),
     SEND_JOG_STOP = auto(),
-    RETURN_TO_ORIGIN = auto()
+    RETURN_TO_ORIGIN = auto(),
+    RETURN_TO_NEUTRAL = auto(),
+    ZERO_AXES = auto(),
+    TOGGLE_KEY_LOCK = auto()
