@@ -164,30 +164,38 @@ class RobotControl:
             self.selected_macro = None
 
     def play_macro(self, macro_id: Macro):
-        print("I AM PLAYING")
         if len(self.saved_macros[macro_id]) > 0:
             sequence: list = self.saved_macros[macro_id].copy()
 
             print(f"MACRO | Playing Macro [{macro_id}]...")
 
-            self.go_to_origin()
+            self.go_to_neutral()
 
-            time.sleep(5)
+            processed_count = 0
 
             while len(sequence) > 0:
                 print(self.state)
-                if self.state == 'Idle':
-                    current_command = sequence.pop(0)
 
-                    print(current_command)
+                current_command = sequence.pop(0)
 
-                    self.send(current_command, expect_no_response=True)
+                print(current_command)
+
+                self.send(current_command)
+
+                time.sleep(0.25)
+
+                while True:
                     self.sync_state()
 
-                    time.sleep(5)
-                    print(self.state, 'AS')
-                else:
-                    self.sync_state()
+                    if self.state == 'Idle':
+                        processed_count += 1
+                        print(f"Command [{processed_count}] completed.")
+                        break
+                    elif self.state == 'Jog':
+                        print("Moving...")
+                    else:
+                        print(f"Command was interrupted. [{self.state}]")
+                        break
 
             print(f"MACRO | Macro [{macro_id}] completed.")
 
