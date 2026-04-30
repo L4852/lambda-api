@@ -13,7 +13,10 @@ class Constants:
     B_POS_LIMIT: (int, int) = (0, 180)
     C_POS_LIMIT: (int, int) = (-60, 60)
 
+    # Presets
     NEUTRAL_COORDINATE: (int, int, int, int, int, int) = (0, -35, -165, 0, 0, 0)
+    STORAGE_COORDINATE: (int, int, int, int, int, int) = (-1, 78, -200, 0, -30, 0)
+    # -1 78 -200 0 -30 0
 
     X_ACCEL: float = 10.0
     Y_ACCEL: float = 10.0

@@ -43,7 +43,8 @@ class KeyboardInput:
             '`': InputCommands.SOFT_RESET,
             '.': InputCommands.SEND_JOG_STOP,
             '0': InputCommands.RETURN_TO_ORIGIN,
-            '9': InputCommands.RETURN_TO_NEUTRAL
+            '9': InputCommands.RETURN_TO_NEUTRAL,
+            '8': InputCommands.STORAGE_CONFIGURATION
         }
 
         self.robotInstance = RobotControl()

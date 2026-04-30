@@ -257,19 +257,31 @@ class RobotControl:
 
     def go_to_origin(self):
         print("Returning to origin...")
-        self.serial_connection.send_message("G0 G90 X0 Y0 Z0 A0")
-        self.serial_connection.send_message("G0 G54 B0")
+        self.serial_connection.send_message("$J=G90X0Y0Z0A0F500")
+        self.serial_connection.send_message("$J=G90B0F500")
         time.sleep(2)
-        self.serial_connection.send_message("G0 G54 C0")
+        self.serial_connection.send_message("$J=G90C0F500")
         print("Returned to origin.")
 
     def go_to_neutral(self):
         print("Returning to neutral...")
-        self.serial_connection.send_message(f"G0 G90 X0 Y{Constants.NEUTRAL_COORDINATE[1]} Z{Constants.NEUTRAL_COORDINATE[2]} A0")
-        self.serial_connection.send_message("G0 G54 B0")
+        self.serial_connection.send_message(
+            f"$J=G90 X0 Y{Constants.NEUTRAL_COORDINATE[1]} Z{Constants.NEUTRAL_COORDINATE[2]} A{Constants.NEUTRAL_COORDINATE[3]} F500")
+        self.serial_connection.send_message(f"G54 B{Constants.NEUTRAL_COORDINATE[4]} F500")
         time.sleep(2)
-        self.serial_connection.send_message("G0 G54 C0")
+        self.serial_connection.send_message(f"G54 C{Constants.NEUTRAL_COORDINATE[5]} F500")
         print("Returned to neutral.")
+
+    def go_to_storage_position(self):
+        print("Activating storage mode...")
+
+        self.serial_connection.send_message(
+            f"$J=G90 X0 Y{Constants.STORAGE_COORDINATE[1]} Z{Constants.STORAGE_COORDINATE[2]} A{Constants.STORAGE_COORDINATE[3]} F500")
+        self.serial_connection.send_message(f"G54 B{Constants.STORAGE_COORDINATE[4]} F500")
+        time.sleep(2)
+        self.serial_connection.send_message(f"G54 C{Constants.STORAGE_COORDINATE[5]} F500")
+
+        print("Storage mode activated.")
 
     def set_acceleration(self):
         print("Setting acceleration...")
@@ -326,10 +338,10 @@ class RobotControl:
             self.current_speed = 100
             print(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_MEDIUM:
-            self.current_speed = 500
+            self.current_speed = 250
             print(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_HIGH:
-            self.current_speed = 750
+            self.current_speed = 500
             print(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.REQUEST_ROBOT_STATUS:
             status_dict = self.get_status()
