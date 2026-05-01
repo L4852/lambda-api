@@ -1,6 +1,7 @@
 class Constants:
     # Constants
 
+
     # Integers / Float
     CONNECTION_RETRY_MAX = 5
     CONNECTION_RETRY_DELAY = 5
