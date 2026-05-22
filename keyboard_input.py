@@ -44,7 +44,8 @@ class KeyboardInput:
             '.': InputCommands.SEND_JOG_STOP,
             '0': InputCommands.RETURN_TO_ORIGIN,
             '9': InputCommands.RETURN_TO_NEUTRAL,
-            '8': InputCommands.STORAGE_CONFIGURATION
+            '8': InputCommands.STORAGE_CONFIGURATION,
+            ']': InputCommands.CLAW_DEMO
         }
 
         self.robotInstance = RobotControl()

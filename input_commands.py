@@ -2,7 +2,6 @@ from enum import IntEnum, auto
 
 
 class InputCommands(IntEnum):
-
     X_CW = auto(),
     X_CCW = auto(),
     Y_UP = auto(),
@@ -41,3 +40,4 @@ class InputCommands(IntEnum):
     ZERO_AXES = auto(),
     TOGGLE_KEY_LOCK = auto(),
     STORAGE_CONFIGURATION = auto()
+    CLAW_DEMO = auto()

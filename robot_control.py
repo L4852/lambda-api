@@ -4,6 +4,7 @@ from enum import IntEnum, auto, StrEnum
 from constants import Constants
 from input_commands import InputCommands
 from serial_communication import SerialCommunication
+from sound import Sound
 
 
 class Axis(StrEnum):
@@ -33,8 +34,12 @@ class RobotControl:
     """
 
     def __init__(self):
+        self.snd = Sound()
+
         init_start_time = time.perf_counter()
+        self.snd.play_generic_task_sound()
         print("Starting robot...")
+        self.snd.say("Starting robot...")
         self.pos: dict = {
             Axis.AXIS_X: 0.0,
             Axis.AXIS_Y: 0.0,
@@ -89,6 +94,9 @@ class RobotControl:
 
         self.calibration_mode = Constants.CALIBRATION_MODE
 
+        self.snd.play_generic_task_sound()
+        self.snd.say("Configuring robot settings...")
+
         self.set_homing_mask()
 
         self.enable_wpos()
@@ -112,8 +120,11 @@ class RobotControl:
         time.sleep(3)
 
         init_end_time = time.perf_counter()
+        self.snd.play_setup_sound()
         print(f"Robot initialized. [{round(init_end_time - init_start_time, 3)}s elapsed]\n=================")
         print(f"Key input locked. Press (RIGHT ALT) to toggle.")
+        self.snd.say(f"Robot initialized. {round(init_end_time - init_start_time)} seconds elapsed.")
+        self.snd.say(f"Key input locked. Press RIGHT ALT to toggle.")
 
     # =========================
     # Class methods
@@ -238,46 +249,76 @@ class RobotControl:
     # =========================
     def set_homing_mask(self):
         print("Setting homing mask...")
+        self.snd.play_generic_task_sound()
         self.serial_connection.send_message("$25=9")
 
     def unlock_grbl(self):
+        self.snd.play_generic_task_sound()
         print("Unlocking GRBL...")
+        self.snd.say("Unlocking GRBL...")
+
         self.serial_connection.send_message("$X")
         self.serial_connection.send_message(b"\r\n")
+
+        self.snd.play_generic_task_sound()
         print("Unlocked...")
+        self.snd.say("Unlocked...")
 
     def enable_wpos(self):
+        self.snd.play_generic_task_sound()
         print("Configuring WPos in status...")
         # $10=0 -> Include WPos
         self.serial_connection.send_message("$10=0")
+
+        self.snd.play_generic_task_sound()
         print("Completed.")
 
     def disable_soft_limits(self):
+        self.snd.play_generic_task_sound()
         print("Disabling soft limits...")
         # $20=0 -> Disable soft limits
         self.serial_connection.send_message("$20=0")
+
+        self.snd.play_generic_task_sound()
         print("Soft limits disabled.")
 
     def disable_automatic_homing(self):
+        self.snd.play_generic_task_sound()
         print("Disabling automatic homing...")
         # $22=0 -> Disable auto homing
         self.serial_connection.send_message("$22=0")
+
+        self.snd.play_generic_task_sound()
         print("Automatic homing disabled.")
 
     # PRESETS
     def go_to_origin(self):
+        self.snd.play_generic_task_sound()
         print("Returning to origin...")
+        # self.snd.say("Returning to origin...")
+
         self.serial_connection.send_message("$J=G90X0Y0Z0A0B0C0F500")
+
+        self.snd.play_ping_sound()
         print("Returned to origin.")
+        # self.snd.say("Returned to origin.")
 
     def go_to_neutral(self):
+        self.snd.play_generic_task_sound()
         print("Returning to neutral...")
+        # self.snd.say("Returning to neutral...")
+
         self.serial_connection.send_message(
             f"$J=G90 X{Constants.NEUTRAL_COORDINATE[0]} Y{Constants.NEUTRAL_COORDINATE[1]} Z{Constants.NEUTRAL_COORDINATE[2]} A{Constants.NEUTRAL_COORDINATE[3]} B{Constants.NEUTRAL_COORDINATE[4]} C{Constants.NEUTRAL_COORDINATE[5]} F500")
+
+        self.snd.play_ping_sound()
         print("Returned to neutral.")
+        # self.snd.say("Returned to neutral.")
 
     def go_to_storage_position(self):
+        self.snd.play_generic_task_sound()
         print("Activating storage mode...")
+        # self.snd.say("Activating storage mode...")
 
         self.serial_connection.send_message(
             f"$J=G90 X{Constants.STORAGE_COORDINATE[0]} Y{Constants.STORAGE_COORDINATE[1]} Z{Constants.STORAGE_COORDINATE[2]} A{Constants.STORAGE_COORDINATE[3]} F500")
@@ -285,7 +326,67 @@ class RobotControl:
         time.sleep(2)
         self.serial_connection.send_message(f"J=G90 C{Constants.STORAGE_COORDINATE[5]} F500")
 
+        self.snd.play_ping_sound()
         print("Storage mode activated.")
+        # self.snd.say("Storage mode activated.")
+
+    def claw_contract(self):
+        if self.end_eff < 1.0:
+            self.end_eff = round(self.end_eff, 1) + 0.1
+            gcode = f"M97B{self.end_eff * 499}T{Constants.SERVO_TRAVEL_TIME}"
+
+            self.send(gcode)
+
+            if self.recording and self.selected_macro is not None:
+                self.macro_recording_buffer += gcode
+
+            self.print_gcode(gcode.encode('utf-8'))
+        else:
+            gcode = f"M97B499T{Constants.SERVO_TRAVEL_TIME}"
+            self.end_eff = 1.0
+            self.send(gcode)
+
+            if self.recording and self.selected_macro is not None:
+                self.macro_recording_buffer += gcode
+
+            self.print_gcode(gcode.encode('utf-8'))
+
+    def claw_relax(self):
+        if self.end_eff > 0.0:
+            self.end_eff = round(self.end_eff, 1) - 0.1
+
+            gcode = f"M97B{round(self.end_eff * 499)}T{Constants.SERVO_TRAVEL_TIME}"
+
+            self.send(gcode)
+
+            if self.recording and self.selected_macro is not None:
+                self.macro_recording_buffer += gcode
+
+            self.print_gcode(gcode.encode('utf-8'))
+        else:
+            gcode = f"M97B0T{Constants.SERVO_TRAVEL_TIME}"
+            self.end_eff = 0.0
+            self.send(gcode)
+
+            if self.recording and self.selected_macro is not None:
+                self.macro_recording_buffer += gcode
+
+            self.print_gcode(gcode.encode('utf-8'))
+
+    def claw_test_loop(self):
+        self.snd.play_generic_task_sound()
+        print("== CLAW TEST MODE: PRESS ANY KEY TO PLAY TEST SEQUENCE ==")
+
+        time.sleep(3)
+        print("Closing...")
+        for i in range(9):
+            self.claw_contract()
+        time.sleep(3)
+
+        for i in range(9):
+            self.claw_relax()
+
+        self.snd.play_ping_sound()
 
     def set_acceleration(self):
         print("Setting acceleration...")
@@ -330,29 +431,41 @@ class RobotControl:
         if command == InputCommands.TOGGLE_KEY_LOCK:
             if not self.key_locked:
                 self.key_locked = True
+                self.snd.play_generic_task_sound()
                 print("Key input locked.")
+                # self.snd.say("Key input locked.")
             else:
                 self.key_locked = False
+                self.snd.play_generic_task_sound()
                 print("Key input unlocked.")
+                # self.snd.say("Key input unlocked.")
 
         if self.key_locked:
             return
 
         if command == InputCommands.SPEED_SLOW:
             self.current_speed = 100
+            self.snd.play_generic_task_sound()
             print(f"Speed set to {self.current_speed} mm/s.")
+            # self.snd.say(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_MEDIUM:
             self.current_speed = 250
             print(f"Speed set to {self.current_speed} mm/s.")
+#             self.snd.say(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_HIGH:
             self.current_speed = 500
             print(f"Speed set to {self.current_speed} mm/s.")
+#             # self.snd.say(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.REQUEST_ROBOT_STATUS:
             status_dict = self.get_status()
             print("STATUS:", status_dict)
         elif command == InputCommands.SOFT_RESET:
+            self.snd.play_generic_task_sound()
             print("Sending soft reset command...")
+            # self.snd.say("Sending soft reset command...")
             response = self.send(b'\x18', True)
+
+            self.snd.play_ping_sound()
             print("Reset successfully.")
             time.sleep(2)
 
@@ -373,6 +486,9 @@ class RobotControl:
 
             if response:
                 print(response)
+
+        elif command == InputCommands.CLAW_DEMO:
+            self.claw_test_loop()
 
         elif command == InputCommands.REC_TOGGLE:
             if self.recording:
@@ -420,43 +536,9 @@ class RobotControl:
                 self.play_macro(self.selected_macro)
 
         elif command == InputCommands.END_EFF_CLOSE:
-            if self.end_eff < 1.0:
-                gcode = f"M97B{self.end_eff * 499}T{Constants.SERVO_TRAVEL_TIME}"
-                self.end_eff = round(self.end_eff, 1) + 0.1
-                self.send(gcode)
-
-                if self.recording and self.selected_macro is not None:
-                    self.macro_recording_buffer += gcode
-
-                self.print_gcode(gcode.encode('utf-8'))
-            else:
-                gcode = f"M97B499T{Constants.SERVO_TRAVEL_TIME}"
-                self.end_eff = 1.0
-                self.send(gcode)
-
-                if self.recording and self.selected_macro is not None:
-                    self.macro_recording_buffer += gcode
-
-                self.print_gcode(gcode.encode('utf-8'))
+            self.claw_contract()
         elif command == InputCommands.END_EFF_OPEN:
-            if self.end_eff > 0.0:
-                gcode = f"M97B{round(self.end_eff * 499)}T{Constants.SERVO_TRAVEL_TIME}"
-                self.end_eff = round(self.end_eff, 1) - 0.1
-                self.send(gcode)
-
-                if self.recording and self.selected_macro is not None:
-                    self.macro_recording_buffer += gcode
-
-                self.print_gcode(gcode.encode('utf-8'))
-            else:
-                gcode = f"M97B0T{Constants.SERVO_TRAVEL_TIME}"
-                self.end_eff = 0.0
-                self.send(gcode)
-
-                if self.recording and self.selected_macro is not None:
-                    self.macro_recording_buffer += gcode
-
-                self.print_gcode(gcode.encode('utf-8'))
+            self.claw_relax()
 
         # Commands differing between calibration (manual small step) and normal mode.
         if not self.calibration_mode:

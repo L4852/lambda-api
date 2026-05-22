@@ -16,7 +16,7 @@ class Constants:
 
     # Presets
     NEUTRAL_COORDINATE: (int, int, int, int, int, int) = (0, -35, -165, 0, 0, 0)
-    STORAGE_COORDINATE: (int, int, int, int, int, int) = (-1, 78, -200, 0, -30, 0)
+    STORAGE_COORDINATE: (int, int, int, int, int, int) = (-1, 75, -200, 0, -30, 0)
     # -1 78 -200 0 -30 0
 
     X_ACCEL: float = 10.0
