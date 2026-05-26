@@ -1,7 +1,9 @@
+import time
+
 import numpy as np
 import pyttsx3
 import sounddevice as sd
-
+import subprocess
 
 class Sound:
     def __init__(self):
@@ -17,24 +19,17 @@ class Sound:
         sd.play(wave)
         sd.wait()
 
-    def say(self, text: str):
-        tts_engine = pyttsx3.init()
+    def say(self, text: str, use_mac_system=True):
+        if not use_mac_system:
+            engine = pyttsx3.init()
+            voices = engine.getProperty("voices")
 
-        voices = tts_engine.getProperty("voices")
+            engine.setProperty("voice", voices[22].id)
+            engine.say(text)
+            engine.runAndWait()
+        else:
+            subprocess.run(['say', text])
 
-        tts_engine.setProperty("voice", voices[22].id)
-        tts_engine.say(text)
-        tts_engine.runAndWait()
-        tts_engine.stop()
-
-    def list_voices(self):
-        tts_engine = pyttsx3.init()
-
-        voices = tts_engine.getProperty("voices")
-
-        for index, voice in enumerate(voices):
-            # Print the index, name, and languages of each voice
-            print(f"Index: {index} | Name: {voice.name} | Languages: {voice.languages}")
 
     def play_error_sound(self):
         self.beep(440, 0.15)
@@ -73,13 +68,13 @@ class Sound:
 if __name__ == "__main__":
     snd = Sound()
 
-    snd.play_setup_sound()
-    snd.play_error_sound()
-
-    for i in range(2):
-        snd.play_ping_sound()
-        snd.play_generic_task_sound()
-
-    snd.play_connecting_progress_sound()
+    # snd.play_setup_sound()
+    # snd.play_error_sound()
+    #
+    # for i in range(2):
+    #     snd.play_ping_sound()
+    #     snd.play_generic_task_sound()
+    #
+    # snd.play_connecting_progress_sound()
     snd.say("Connecting...")
     snd.say("Setting homing mask...")

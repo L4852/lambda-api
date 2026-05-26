@@ -60,7 +60,7 @@ class SerialCommunication:
                 time.sleep(1)
 
                 # PING
-                self.snd.play_ping_sound()
+
                 print("Waiting for acknowledgement...")
                 self.snd.say("Waiting for acknowledgement...")
 
@@ -124,7 +124,7 @@ class SerialCommunication:
 
             self.connection.close()
 
-            self.snd.play_ping_sound()
+
             print(f"Connection closed successfully, exiting program...")
             time.sleep(2)
             sys.exit(0)
@@ -140,10 +140,10 @@ class SerialCommunication:
         if self.connection is not None and self.connected:
             if isinstance(data, str):
                 self.connection.write(data.encode('utf-8') + Constants.NEWLINE_SEQUENCE)
-                self.snd.play_ping_sound()
+
             elif isinstance(data, bytes):
                 self.connection.write(data)
-                self.snd.play_ping_sound()
+
             else:
                 self.snd.play_error_sound()
                 raise Exception(TypeError("Incorrect type for parameter 'message'. (str | bytes)."))

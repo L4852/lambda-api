@@ -40,4 +40,6 @@ class InputCommands(IntEnum):
     ZERO_AXES = auto(),
     TOGGLE_KEY_LOCK = auto(),
     STORAGE_CONFIGURATION = auto()
-    CLAW_DEMO = auto()
+    CLAW_DEMO = auto(),
+    HARD_ZERO = auto()
+

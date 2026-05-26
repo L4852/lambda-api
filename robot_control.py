@@ -129,9 +129,6 @@ class RobotControl:
     # =========================
     # Class methods
     # =========================
-    def send(self, message: str | bytes, expect_no_response=False):
-        response = self.serial_connection.send_message(message, expect_no_response=expect_no_response)
-        return response
 
     def get_status(self) -> dict:
         response = self.serial_connection.send_message(b'?')
@@ -195,7 +192,7 @@ class RobotControl:
 
                     print(current_command)
 
-                    self.send(current_command, expect_no_response=True)
+                    self.serial_connection.send_message(current_command, expect_no_response=True)
                     self.sync_state()
 
                     time.sleep(5)
@@ -295,30 +292,30 @@ class RobotControl:
     def go_to_origin(self):
         self.snd.play_generic_task_sound()
         print("Returning to origin...")
-        # self.snd.say("Returning to origin...")
+        self.snd.say("Returning to origin...")
 
         self.serial_connection.send_message("$J=G90X0Y0Z0A0B0C0F500")
 
         self.snd.play_ping_sound()
         print("Returned to origin.")
-        # self.snd.say("Returned to origin.")
+        self.snd.say("Returned to origin.")
 
     def go_to_neutral(self):
         self.snd.play_generic_task_sound()
         print("Returning to neutral...")
-        # self.snd.say("Returning to neutral...")
+        self.snd.say("Returning to neutral...")
 
         self.serial_connection.send_message(
             f"$J=G90 X{Constants.NEUTRAL_COORDINATE[0]} Y{Constants.NEUTRAL_COORDINATE[1]} Z{Constants.NEUTRAL_COORDINATE[2]} A{Constants.NEUTRAL_COORDINATE[3]} B{Constants.NEUTRAL_COORDINATE[4]} C{Constants.NEUTRAL_COORDINATE[5]} F500")
 
         self.snd.play_ping_sound()
         print("Returned to neutral.")
-        # self.snd.say("Returned to neutral.")
+        self.snd.say("Returned to neutral.")
 
     def go_to_storage_position(self):
         self.snd.play_generic_task_sound()
         print("Activating storage mode...")
-        # self.snd.say("Activating storage mode...")
+        self.snd.say("Activating storage mode...")
 
         self.serial_connection.send_message(
             f"$J=G90 X{Constants.STORAGE_COORDINATE[0]} Y{Constants.STORAGE_COORDINATE[1]} Z{Constants.STORAGE_COORDINATE[2]} A{Constants.STORAGE_COORDINATE[3]} F500")
@@ -328,14 +325,14 @@ class RobotControl:
 
         self.snd.play_ping_sound()
         print("Storage mode activated.")
-        # self.snd.say("Storage mode activated.")
+        self.snd.say("Storage mode activated.")
 
     def claw_contract(self):
         if self.end_eff < 1.0:
             self.end_eff = round(self.end_eff, 1) + 0.1
             gcode = f"M97B{self.end_eff * 499}T{Constants.SERVO_TRAVEL_TIME}"
 
-            self.send(gcode)
+            self.serial_connection.send_message(gcode)
 
             if self.recording and self.selected_macro is not None:
                 self.macro_recording_buffer += gcode
@@ -344,7 +341,7 @@ class RobotControl:
         else:
             gcode = f"M97B499T{Constants.SERVO_TRAVEL_TIME}"
             self.end_eff = 1.0
-            self.send(gcode)
+            self.serial_connection.send_message(gcode)
 
             if self.recording and self.selected_macro is not None:
                 self.macro_recording_buffer += gcode
@@ -357,7 +354,7 @@ class RobotControl:
 
             gcode = f"M97B{round(self.end_eff * 499)}T{Constants.SERVO_TRAVEL_TIME}"
 
-            self.send(gcode)
+            self.serial_connection.send_message(gcode)
 
             if self.recording and self.selected_macro is not None:
                 self.macro_recording_buffer += gcode
@@ -366,7 +363,7 @@ class RobotControl:
         else:
             gcode = f"M97B0T{Constants.SERVO_TRAVEL_TIME}"
             self.end_eff = 0.0
-            self.send(gcode)
+            self.serial_connection.send_message(gcode)
 
             if self.recording and self.selected_macro is not None:
                 self.macro_recording_buffer += gcode
@@ -375,7 +372,7 @@ class RobotControl:
 
     def claw_test_loop(self):
         self.snd.play_generic_task_sound()
-        print("== CLAW TEST MODE: PRESS ANY KEY TO PLAY TEST SEQUENCE ==")
+        input("== CLAW TEST MODE: PRESS ENTER TO CONTINUE ==")
 
         time.sleep(3)
         print("Closing...")
@@ -451,11 +448,11 @@ class RobotControl:
         elif command == InputCommands.SPEED_MEDIUM:
             self.current_speed = 250
             print(f"Speed set to {self.current_speed} mm/s.")
-#             self.snd.say(f"Speed set to {self.current_speed} mm/s.")
+        #             self.snd.say(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.SPEED_HIGH:
             self.current_speed = 500
             print(f"Speed set to {self.current_speed} mm/s.")
-#             # self.snd.say(f"Speed set to {self.current_speed} mm/s.")
+        #             # self.snd.say(f"Speed set to {self.current_speed} mm/s.")
         elif command == InputCommands.REQUEST_ROBOT_STATUS:
             status_dict = self.get_status()
             print("STATUS:", status_dict)
@@ -463,7 +460,7 @@ class RobotControl:
             self.snd.play_generic_task_sound()
             print("Sending soft reset command...")
             # self.snd.say("Sending soft reset command...")
-            response = self.send(b'\x18', True)
+            response = self.serial_connection.send_message(b'\x18', True)
 
             self.snd.play_ping_sound()
             print("Reset successfully.")
@@ -481,7 +478,7 @@ class RobotControl:
 
         elif command == InputCommands.SEND_JOG_STOP:
             print("Sending jog stop command...")
-            response = self.send(b'\x85', True)
+            response = self.serial_connection.send_message(b'\x85', True)
             print("Sent successfully.")
 
             if response:
@@ -547,7 +544,7 @@ class RobotControl:
                 # gcode = b"\x85"
                 gcode = b"\x85"
 
-                self.send(gcode, True)
+                self.serial_connection.send_message(gcode, True)
 
                 self.sync_state()
 
@@ -558,32 +555,38 @@ class RobotControl:
                 self.current_axis = None
             elif self.current_axis is None:
                 if command == InputCommands.X_CW:
-                    axis = 'X'
                     feed_rate = self.current_speed
-                    gcode_string = f"$J=G90{axis}{Constants.X_POS_LIMIT[1]}F{feed_rate}"
+                    gcode_string = f"$J=G90 X{Constants.X_POS_LIMIT[1]} F{feed_rate}"
 
-                    self.send(gcode_string)
+                    self.serial_connection.send_message(gcode_string)
 
                     self.current_axis = Axis.AXIS_X
+                elif command == InputCommands.X_CCW:
+                    feed_rate = self.current_speed
+                    gcode_string = f"$J=G90 X-{Constants.X_POS_LIMIT[1]} F{feed_rate}"
 
-                    self.print_gcode(gcode_string.encode('utf-8'))
+                    self.serial_connection.send_message(gcode_string)
+
+                    self.current_axis = Axis.AXIS_X
             else:
                 pass
         else:
             if command == InputCommands.ZERO_AXES:
                 print("Zeroing axes...")
-                # gcode_string = "$RST=#"
-                # self.send(gcode_string)
-                # time.sleep(2)
                 gcode_string_2 = "G10 L20 P1 X0 Y0 Z0 A0 B0 C0"
-                self.send(gcode_string_2)
+                self.serial_connection.send_message(gcode_string_2)
                 print("Axes zeroed.")
-            if command == InputCommands.X_CW:
+            elif command == InputCommands.HARD_ZERO:
+                # gcode_string = "$RST=#"
+                # self.serial_connection.send_message(gcode_string)
+                # time.sleep(2)
+                pass
+            elif command == InputCommands.X_CW:
                 axis = Axis.AXIS_X
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_X
 
@@ -593,7 +596,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}-{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_X
 
@@ -603,7 +606,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_Y
 
@@ -613,7 +616,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}-{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_Y
 
@@ -623,7 +626,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}-{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_Z
 
@@ -633,7 +636,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_Z
 
@@ -643,7 +646,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_A
 
@@ -653,27 +656,25 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91{axis}-{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_A
 
                 self.print_gcode(gcode_string.encode('utf-8'))
             if command == InputCommands.B_UP:
-                axis = Axis.AXIS_B
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91C{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_B
 
                 self.print_gcode(gcode_string.encode('utf-8'))
             elif command == InputCommands.B_DOWN:
-                axis = Axis.AXIS_B
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91C-{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_B
 
@@ -683,7 +684,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91B-{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_C
 
@@ -693,7 +694,7 @@ class RobotControl:
                 feed_rate = self.current_speed
                 gcode_string = f"$J=G91B{Constants.MANUAL_STEP_WIDTH}F{feed_rate}"
 
-                self.send(gcode_string)
+                self.serial_connection.send_message(gcode_string)
 
                 self.current_axis = Axis.AXIS_C
 
